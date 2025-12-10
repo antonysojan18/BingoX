@@ -65,6 +65,7 @@ const Index = () => {
         tiles={tiles}
         mode={mode}
         completedTileIndices={completedTileIndices}
+        completedLines={completedLines}
         onTileClick={handleTileClick}
       />
 

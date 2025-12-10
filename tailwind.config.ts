@@ -59,6 +59,12 @@ export default {
           marked: "hsl(var(--tile-marked))",
           glow: "hsl(var(--tile-glow))",
         },
+        strike: {
+          line: "hsl(var(--strike-line))",
+        },
+        letter: {
+          glow: "hsl(var(--letter-glow))",
+        },
         confetti: {
           gold: "hsl(var(--confetti-gold))",
           amber: "hsl(var(--confetti-amber))",

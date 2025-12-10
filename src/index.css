@@ -47,6 +47,9 @@
     --tile-marked: 168 76% 42%;
     --tile-glow: 168 76% 50%;
     
+    --strike-line: 217 91% 60%;
+    --letter-glow: 217 91% 60%;
+    
     --confetti-gold: 43 96% 56%;
     --confetti-amber: 38 92% 50%;
   }
@@ -90,11 +93,20 @@
 
   .glass-tile.marked {
     @apply bg-tile-marked/90 border-tile-glow/50;
-    box-shadow: 0 0 20px hsl(var(--tile-glow) / 0.3);
+    box-shadow: 0 0 15px hsl(var(--tile-glow) / 0.2);
   }
 
-  .glass-tile.completed {
-    animation: shimmer 2s ease-in-out infinite;
+  .bingo-letter {
+    @apply transition-all duration-500 ease-out;
+    color: hsl(var(--foreground) / 0.6);
+  }
+
+  .bingo-letter.illuminated {
+    color: hsl(var(--letter-glow));
+    text-shadow: 0 0 20px hsl(var(--letter-glow) / 0.9),
+                 0 0 40px hsl(var(--letter-glow) / 0.6),
+                 0 0 60px hsl(var(--letter-glow) / 0.4);
+    animation: letter-pulse 1.5s ease-in-out infinite;
   }
 
   .control-btn {
@@ -105,6 +117,16 @@
   .control-btn.primary {
     @apply bg-primary/80 hover:bg-primary/90 text-primary-foreground;
   }
+
+  .strike-line {
+    stroke: hsl(var(--strike-line));
+    stroke-width: 4;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 8px hsl(var(--strike-line) / 0.8));
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: strike-draw 0.5s ease-out forwards;
+  }
 }
 
 @layer utilities {
@@ -114,14 +136,23 @@
   }
 }
 
-/* Animations */
-@keyframes shimmer {
+@keyframes letter-pulse {
   0%, 100% {
-    box-shadow: 0 0 20px hsl(var(--tile-glow) / 0.3);
+    opacity: 1;
+    transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 40px hsl(var(--tile-glow) / 0.6),
-                0 0 60px hsl(var(--tile-glow) / 0.3);
+    opacity: 0.85;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes strike-draw {
+  0% {
+    stroke-dashoffset: 1000;
+  }
+  100% {
+    stroke-dashoffset: 0;
   }
 }
 
