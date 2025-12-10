@@ -56,7 +56,7 @@ const Index = () => {
       </h1>
       <p className="text-foreground/60 text-sm sm:text-base mb-6 sm:mb-8">
         {mode === 'idle' && 'Choose how to set up your card'}
-        {mode === 'entering' && 'Tap tiles in order to enter your numbers'}
+        {mode === 'entering' && `Tap tiles in order to enter your numbers (${entryIndex}/25)`}
         {mode === 'playing' && 'Mark your numbers • 5 lines to win'}
       </p>
 

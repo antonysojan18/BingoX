@@ -37,7 +37,7 @@ export const Controls = ({
       {mode === 'entering' && (
         <div className="flex flex-col items-center gap-3">
           <p className="text-foreground/80 text-sm sm:text-base">
-            Tap tiles to enter numbers ({entryIndex + 1}/24)
+            Tap tiles to enter numbers ({entryIndex}/25)
           </p>
           <button
             onClick={onReset}

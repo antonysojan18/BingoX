@@ -18,8 +18,8 @@ export const BingoTile = ({
   onClick,
 }: BingoTileProps) => {
   const isClickable = 
-    (mode === 'entering' && !isCenter && value === null) ||
-    (mode === 'playing' && !marked && !isCenter);
+    (mode === 'entering' && value === null) ||
+    (mode === 'playing' && !marked);
 
   return (
     <button
@@ -33,22 +33,15 @@ export const BingoTile = ({
         marked && 'marked',
         isCompleted && 'completed',
         !isClickable && 'cursor-default',
-        isCenter && 'bg-tile-marked/80',
       )}
     >
-      {isCenter ? (
-        <span className="text-base sm:text-lg md:text-xl font-semibold text-foreground/90">
-          FREE
-        </span>
-      ) : (
-        <span className={cn(
-          'transition-all duration-200',
-          marked ? 'text-foreground' : 'text-foreground/90',
-          !value && mode === 'entering' && 'opacity-0',
-        )}>
-          {value || ''}
-        </span>
-      )}
+      <span className={cn(
+        'transition-all duration-200',
+        marked ? 'text-foreground' : 'text-foreground/90',
+        !value && mode === 'entering' && 'opacity-0',
+      )}>
+        {value || ''}
+      </span>
     </button>
   );
 };
