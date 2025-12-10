@@ -33,47 +33,30 @@ const WINNING_LINES = [
 ];
 
 const createInitialTiles = (): TileState[] => {
-  return Array.from({ length: 25 }, (_, i) => ({
+  return Array.from({ length: 25 }, () => ({
     value: null,
-    marked: i === 12, // Center is marked by default
-    isCenter: i === 12,
+    marked: false,
+    isCenter: false,
   }));
 };
 
 const generateRandomCard = (): TileState[] => {
-  // Generate numbers for each column (B: 1-15, I: 16-30, N: 31-45, G: 46-60, O: 61-75)
-  const columns: number[][] = [];
+  // Generate shuffled numbers 1-25
+  const numbers = Array.from({ length: 25 }, (_, i) => i + 1);
   
-  for (let col = 0; col < 5; col++) {
-    const start = col * 15 + 1;
-    const end = start + 14;
-    const pool = Array.from({ length: 15 }, (_, i) => start + i);
-    
-    // Shuffle and take 5
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
-    columns.push(pool.slice(0, 5));
+  // Fisher-Yates shuffle
+  for (let i = numbers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
   }
 
-  // Create tiles array in row order
-  const tiles: TileState[] = [];
-  for (let row = 0; row < 5; row++) {
-    for (let col = 0; col < 5; col++) {
-      const index = row * 5 + col;
-      const isCenter = index === 12;
-      tiles.push({
-        value: isCenter ? null : columns[col][row],
-        marked: isCenter,
-        isCenter,
-      });
-    }
-  }
-
-  return tiles;
+  // Create tiles array
+  return numbers.map(num => ({
+    value: num,
+    marked: false,
+    isCenter: false,
+  }));
 };
-
 export const useBingoGame = () => {
   const [gameState, setGameState] = useState<GameState>({
     tiles: createInitialTiles(),
@@ -99,7 +82,6 @@ export const useBingoGame = () => {
 
   const enterNumber = useCallback((tileIndex: number) => {
     if (gameState.mode !== 'entering') return;
-    if (tileIndex === 12) return; // Skip center
     
     setGameState(prev => {
       const newTiles = [...prev.tiles];
@@ -114,7 +96,7 @@ export const useBingoGame = () => {
       };
 
       const newEntryIndex = prev.entryIndex + 1;
-      const isComplete = newEntryIndex >= 24; // 24 numbers (excluding center)
+      const isComplete = newEntryIndex >= 25; // All 25 numbers
 
       return {
         ...prev,
@@ -129,7 +111,7 @@ export const useBingoGame = () => {
     setGameState({
       tiles: generateRandomCard(),
       mode: 'playing',
-      entryIndex: 24,
+      entryIndex: 25,
       completedLines: [],
       hasWon: false,
     });
@@ -138,7 +120,6 @@ export const useBingoGame = () => {
   const markTile = useCallback((tileIndex: number): boolean => {
     if (gameState.mode !== 'playing') return false;
     if (gameState.tiles[tileIndex].marked) return false;
-    if (gameState.tiles[tileIndex].isCenter) return false;
     if (gameState.hasWon) return false;
 
     let didMark = false;
