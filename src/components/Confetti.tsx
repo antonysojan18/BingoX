@@ -21,7 +21,7 @@ export const Confetti = () => {
   const [pieces, setPieces] = useState<ConfettiPiece[]>([]);
 
   useEffect(() => {
-    const newPieces: ConfettiPiece[] = Array.from({ length: 100 }, (_, i) => ({
+    const newPieces: ConfettiPiece[] = Array.from({ length: 200 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       delay: Math.random() * 2,

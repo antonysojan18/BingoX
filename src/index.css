@@ -48,7 +48,7 @@
     --tile-glow: 168 76% 50%;
     
     --strike-line: 217 91% 60%;
-    --letter-glow: 142 76% 50%;
+    --letter-glow: 43 96% 56%;
     
     --confetti-gold: 43 96% 56%;
     --confetti-amber: 38 92% 50%;
@@ -90,6 +90,9 @@
     --tile-bg: 160 25% 18%;
     --tile-marked: 168 76% 35%;
     --tile-glow: 168 76% 45%;
+    
+    --strike-line: 220 70% 35%;
+    --letter-glow: 43 96% 56%;
   }
 }
 
