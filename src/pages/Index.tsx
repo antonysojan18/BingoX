@@ -54,7 +54,7 @@ const Index = () => {
       <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-foreground mb-1 tracking-tight">
         Bingo<span className="text-primary">X</span>
       </h1>
-      <p className="text-foreground/50 text-xs sm:text-sm mb-6 sm:mb-8 tracking-wide">
+      <p className="text-foreground text-xs sm:text-sm mb-6 sm:mb-8 tracking-wide">
         Tap . Match . Celebrate
       </p>
 
