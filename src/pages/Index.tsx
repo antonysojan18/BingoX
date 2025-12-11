@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BingoBoard } from '@/components/BingoBoard';
 import { Controls } from '@/components/Controls';
 import { WinOverlay } from '@/components/WinOverlay';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { useBingoGame } from '@/hooks/useBingoGame';
 import { useSound } from '@/hooks/useSound';
 
@@ -50,7 +51,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
-      {/* Title */}
+      <ThemeToggle />
       <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-foreground mb-1 tracking-tight">
         Bingo<span className="text-primary">X</span>
       </h1>
