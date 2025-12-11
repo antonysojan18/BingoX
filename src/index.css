@@ -55,8 +55,41 @@
   }
 
   .dark {
-    --background: 160 84% 15%;
+    --background: 160 30% 8%;
     --foreground: 0 0% 100%;
+
+    --card: 160 20% 12%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 160 20% 12%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 168 76% 42%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 160 20% 15%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 160 15% 18%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 168 76% 42%;
+    --accent-foreground: 0 0% 100%;
+
+    --border: 160 20% 20%;
+    --input: 160 20% 15%;
+    --ring: 168 76% 42%;
+
+    /* Dark mode gradient - dark emerald to dark blue */
+    --gradient-start: 160 50% 12%;
+    --gradient-end: 220 60% 15%;
+    
+    --glass-bg: 160 30% 15%;
+    --glass-border: 160 30% 25%;
+    
+    --tile-bg: 160 25% 18%;
+    --tile-marked: 168 76% 35%;
+    --tile-glow: 168 76% 45%;
   }
 }
 
