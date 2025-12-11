@@ -51,19 +51,18 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
       {/* Title */}
-      <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-foreground mb-2 tracking-tight">
+      <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-foreground mb-1 tracking-tight">
         Bingo<span className="text-primary">X</span>
       </h1>
-      <p className="text-foreground/60 text-sm sm:text-base mb-6 sm:mb-8">
-        {mode === 'idle' && 'Choose how to set up your card'}
-        {mode === 'entering' && `Tap tiles in order to enter your numbers (${entryIndex}/25)`}
-        {mode === 'playing' && 'Mark your numbers • 5 lines to win'}
+      <p className="text-foreground/50 text-xs sm:text-sm mb-6 sm:mb-8 tracking-wide">
+        Tap . Match . Celebrate
       </p>
 
       {/* Bingo Board */}
       <BingoBoard
         tiles={tiles}
         mode={mode}
+        entryIndex={entryIndex}
         completedTileIndices={completedTileIndices}
         completedLines={completedLines}
         onTileClick={handleTileClick}

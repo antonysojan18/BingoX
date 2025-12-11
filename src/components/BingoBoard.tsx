@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 interface BingoBoardProps {
   tiles: TileState[];
   mode: 'idle' | 'entering' | 'playing';
+  entryIndex: number;
   completedTileIndices: Set<number>;
   completedLines: number[][];
   onTileClick: (index: number) => void;
@@ -34,14 +35,26 @@ const LINE_COORDINATES: Record<string, { x1: number; y1: number; x2: number; y2:
 export const BingoBoard = ({
   tiles,
   mode,
+  entryIndex,
   completedTileIndices,
   completedLines,
   onTileClick,
 }: BingoBoardProps) => {
   const illuminatedCount = Math.min(completedLines.length, 5);
 
+  const instructionText = mode === 'idle' 
+    ? 'Choose how to set up your card'
+    : mode === 'entering' 
+    ? `Tap tiles in order to enter your numbers (${entryIndex}/25)`
+    : 'Mark your numbers • 5 lines to win';
+
   return (
     <div className="glass-panel rounded-3xl p-4 sm:p-6 md:p-8 w-full max-w-[min(90vw,500px)]">
+      {/* Instruction Text */}
+      <p className="text-foreground/60 text-xs sm:text-sm text-center mb-3 sm:mb-4">
+        {instructionText}
+      </p>
+
       {/* Header Row - BINGO letters */}
       <div className="grid grid-cols-5 gap-2 sm:gap-3 mb-3 sm:mb-4">
         {HEADERS.map((letter, index) => (
