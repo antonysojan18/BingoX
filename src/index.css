@@ -128,7 +128,7 @@
             drop-shadow(0 0 24px hsl(var(--strike-line) / 0.6));
     stroke-dasharray: 500;
     stroke-dashoffset: 500;
-    animation: strike-draw 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    animation: strike-draw 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 }
 
