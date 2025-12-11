@@ -90,7 +90,7 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="mt-auto pt-8 pb-4 text-center">
-        <p className="text-foreground/40 text-xs sm:text-sm font-medium tracking-widest uppercase">
+        <p className="text-foreground/30 text-[8px] font-medium tracking-widest uppercase">
           Made By Ayaton Studios
         </p>
       </footer>
