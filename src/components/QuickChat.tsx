@@ -3,14 +3,19 @@ import { MessageCircle, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { Json } from '@/integrations/supabase/types';
+import { useSound } from '@/hooks/useSound';
 
 const QUICK_MESSAGES = [
   "Good luck everyone! 🍀",
+  "Hiiiiii 👋😝",
   "Let's gooo! 🔥",
+  "You Againnnn 😄😂",
+  "You Are DEAD Mate 😏",
+  "Lmao 😂",
+  "Bruh 😭",
+  "Check Mate 😮‍💨💥",
   "Close to Bingo 👀",
-  "Need one more 😭",
-  "Who's winning this round?",
-  "Nice call!",
+  "BIGGG BINGO!! 🎉🎉🔥",
 ];
 
 interface ChatMessage {
@@ -29,6 +34,7 @@ export const QuickChat = ({ roomId, playerName }: QuickChatProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [showToast, setShowToast] = useState<ChatMessage | null>(null);
+  const { playPop } = useSound();
 
   const fetchMessages = useCallback(async () => {
     const { data } = await supabase
@@ -66,6 +72,7 @@ export const QuickChat = ({ roomId, playerName }: QuickChatProps) => {
             const latestMessage = newMessages[newMessages.length - 1];
             if (latestMessage.playerName !== playerName) {
               setShowToast(latestMessage);
+              playPop();
               setTimeout(() => setShowToast(null), 3000);
             }
           }
