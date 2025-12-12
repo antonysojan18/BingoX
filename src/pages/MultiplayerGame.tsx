@@ -5,6 +5,7 @@ import { BingoBoard } from '@/components/BingoBoard';
 import { WinOverlay } from '@/components/WinOverlay';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PlayerDashboard } from '@/components/PlayerDashboard';
+import { QuickChat } from '@/components/QuickChat';
 import { useMultiplayerGame } from '@/hooks/useMultiplayerGame';
 import { useSound } from '@/hooks/useSound';
 
@@ -148,6 +149,9 @@ const MultiplayerGame = () => {
           Lines completed: <span className="text-primary">{completedLines.length}</span> / 5
         </div>
       )}
+
+      {/* Quick Chat */}
+      <QuickChat roomId={roomId} playerName={playerName || 'Player'} />
 
       {/* Win Overlay with Play Again and Back to Home */}
       {showWin && <WinOverlay onClose={handleCloseWin} onBackToHome={handleBackToHome} />}
