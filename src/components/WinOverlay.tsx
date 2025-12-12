@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { Confetti } from './Confetti';
 import { useSound } from '@/hooks/useSound';
+import { Home } from 'lucide-react';
 
 interface WinOverlayProps {
   onClose: () => void;
+  onBackToHome?: () => void;
 }
 
-export const WinOverlay = ({ onClose }: WinOverlayProps) => {
+export const WinOverlay = ({ onClose, onBackToHome }: WinOverlayProps) => {
   const { playWin } = useSound();
 
   useEffect(() => {
@@ -36,19 +38,34 @@ export const WinOverlay = ({ onClose }: WinOverlayProps) => {
             🎉 Congratulations! 🎉
           </p>
 
-          {/* Play Again Button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onClose();
-            }}
-            className="control-btn primary text-lg px-8 py-4 animate-pulse-glow"
-          >
-            Play Again
-          </button>
+          {/* Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+              className="control-btn primary text-lg px-8 py-4 animate-pulse-glow"
+            >
+              Play Again
+            </button>
+            
+            {onBackToHome && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onBackToHome();
+                }}
+                className="control-btn text-lg px-8 py-4 flex items-center gap-2"
+              >
+                <Home size={20} />
+                Back to Home
+              </button>
+            )}
+          </div>
 
           <p className="text-sm text-foreground/60 mt-6">
-            Tap anywhere to continue
+            Tap anywhere to play again
           </p>
         </div>
       </div>
