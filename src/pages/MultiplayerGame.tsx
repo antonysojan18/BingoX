@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { BingoBoard } from '@/components/BingoBoard';
 import { WinOverlay } from '@/components/WinOverlay';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -17,12 +18,16 @@ const MultiplayerGame = () => {
     players,
     myTiles,
     mode,
+    entryIndex,
     completedLines,
     completedTileIndices,
     hasWon,
-    startGame,
+    startEnteringNumbers,
+    enterNumber,
+    generateCard,
     markTile,
     playAgain,
+    leaveRoom,
   } = useMultiplayerGame(roomId || '', playerId || '');
 
   const { playPop } = useSound();
@@ -41,7 +46,12 @@ const MultiplayerGame = () => {
   }, [hasWon, showWin]);
 
   const handleTileClick = async (index: number) => {
-    if (mode === 'playing') {
+    if (mode === 'entering') {
+      const success = await enterNumber(index);
+      if (success) {
+        playPop();
+      }
+    } else if (mode === 'playing') {
       const didMark = await markTile(index);
       if (didMark) {
         playPop();
@@ -54,8 +64,14 @@ const MultiplayerGame = () => {
     await playAgain();
   };
 
-  const handleStartGame = () => {
-    startGame();
+  const handleBackToHome = async () => {
+    await leaveRoom();
+    navigate('/');
+  };
+
+  const handleBack = async () => {
+    await leaveRoom();
+    navigate('/lobby');
   };
 
   if (!roomId || !playerId) {
@@ -65,6 +81,16 @@ const MultiplayerGame = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
       <ThemeToggle />
+      
+      {/* Back Button */}
+      <button
+        onClick={handleBack}
+        className="fixed top-4 left-4 p-2 rounded-full bg-card/50 backdrop-blur-sm border border-border/50 text-foreground/70 hover:text-foreground hover:bg-card/80 transition-all z-20"
+        aria-label="Back to lobby"
+      >
+        <ArrowLeft size={20} />
+      </button>
+
       <PlayerDashboard 
         players={players} 
         currentPlayerId={playerId} 
@@ -82,23 +108,39 @@ const MultiplayerGame = () => {
       <BingoBoard
         tiles={myTiles.length > 0 ? myTiles : Array(25).fill({ value: null, marked: false, isCenter: false })}
         mode={mode}
-        entryIndex={25}
+        entryIndex={entryIndex}
         completedTileIndices={completedTileIndices}
         completedLines={completedLines}
         onTileClick={handleTileClick}
       />
 
-      {/* Start Button */}
-      {mode === 'idle' && (
-        <div className="mt-6">
-          <button
-            onClick={handleStartGame}
-            className="control-btn primary px-8 py-3 text-base"
-          >
-            Generate Card & Start
-          </button>
-        </div>
-      )}
+      {/* Controls */}
+      <div className="flex flex-wrap justify-center gap-3 mt-6 sm:mt-8">
+        {mode === 'idle' && (
+          <>
+            <button
+              onClick={startEnteringNumbers}
+              className="control-btn primary"
+            >
+              Enter Numbers
+            </button>
+            <button
+              onClick={generateCard}
+              className="control-btn"
+            >
+              Generate Card
+            </button>
+          </>
+        )}
+
+        {mode === 'entering' && (
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-foreground/80 text-sm sm:text-base">
+              Tap tiles to enter numbers ({entryIndex - 1}/25)
+            </p>
+          </div>
+        )}
+      </div>
 
       {/* Completed Lines Counter */}
       {mode === 'playing' && (
@@ -107,8 +149,8 @@ const MultiplayerGame = () => {
         </div>
       )}
 
-      {/* Win Overlay with Play Again */}
-      {showWin && <WinOverlay onClose={handleCloseWin} />}
+      {/* Win Overlay with Play Again and Back to Home */}
+      {showWin && <WinOverlay onClose={handleCloseWin} onBackToHome={handleBackToHome} />}
 
       {/* Footer */}
       <footer className="mt-auto pt-8 pb-4 text-center">

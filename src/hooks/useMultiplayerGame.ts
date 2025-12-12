@@ -63,7 +63,8 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
   const [myTiles, setMyTiles] = useState<TileState[]>([]);
   const [completedLines, setCompletedLines] = useState<number[][]>([]);
   const [hasWon, setHasWon] = useState(false);
-  const [mode, setMode] = useState<'idle' | 'playing'>('idle');
+  const [mode, setMode] = useState<'idle' | 'entering' | 'playing'>('idle');
+  const [entryIndex, setEntryIndex] = useState(1);
 
   // Fetch players
   const fetchPlayers = useCallback(async () => {
@@ -90,7 +91,12 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
     const me = mappedPlayers.find(p => p.id === playerId);
     if (me && me.tiles.length > 0) {
       setMyTiles(me.tiles);
-      setMode('playing');
+      // Check if all tiles have values to determine mode
+      const allFilled = me.tiles.every(t => t.value !== null);
+      if (allFilled) {
+        setMode('playing');
+        setEntryIndex(26);
+      }
       // Check completed lines
       const lines = checkCompletedLines(me.tiles);
       setCompletedLines(lines);
@@ -129,19 +135,70 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
     );
   };
 
-  const startGame = useCallback(async () => {
-    const newTiles = generateRandomCard();
-    setMyTiles(newTiles);
-    setMode('playing');
+  const initializeEmptyTiles = (): TileState[] => {
+    return Array(25).fill(null).map(() => ({
+      value: null,
+      marked: false,
+      isCenter: false,
+    }));
+  };
+
+  const startEnteringNumbers = useCallback(async () => {
+    const emptyTiles = initializeEmptyTiles();
+    setMyTiles(emptyTiles);
+    setMode('entering');
+    setEntryIndex(1);
     setCompletedLines([]);
     setHasWon(false);
 
-    // Update in database
+    await supabase
+      .from('players')
+      .update({ tiles: tilesToJson(emptyTiles) })
+      .eq('id', playerId);
+  }, [playerId]);
+
+  const enterNumber = useCallback(async (tileIndex: number): Promise<boolean> => {
+    if (mode !== 'entering') return false;
+    if (myTiles[tileIndex]?.value !== null) return false;
+    if (entryIndex > 25) return false;
+
+    const newTiles = [...myTiles];
+    newTiles[tileIndex] = { ...newTiles[tileIndex], value: entryIndex, marked: false };
+    
+    const newEntryIndex = entryIndex + 1;
+    setMyTiles(newTiles);
+    setEntryIndex(newEntryIndex);
+
+    // If all tiles filled, switch to playing mode
+    if (newEntryIndex > 25) {
+      setMode('playing');
+    }
+
+    await supabase
+      .from('players')
+      .update({ tiles: tilesToJson(newTiles) })
+      .eq('id', playerId);
+
+    return true;
+  }, [mode, myTiles, entryIndex, playerId]);
+
+  const generateCard = useCallback(async () => {
+    const newTiles = generateRandomCard();
+    setMyTiles(newTiles);
+    setMode('playing');
+    setEntryIndex(26);
+    setCompletedLines([]);
+    setHasWon(false);
+
     await supabase
       .from('players')
       .update({ tiles: tilesToJson(newTiles) })
       .eq('id', playerId);
   }, [playerId]);
+
+  const startGame = useCallback(async () => {
+    await generateCard();
+  }, [generateCard]);
 
   const markTile = useCallback(async (tileIndex: number): Promise<boolean> => {
     if (mode !== 'playing') return false;
@@ -176,9 +233,43 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
     return true;
   }, [mode, myTiles, hasWon, playerId, players]);
 
+  const resetGame = useCallback(async () => {
+    setMyTiles([]);
+    setMode('idle');
+    setEntryIndex(1);
+    setCompletedLines([]);
+    setHasWon(false);
+
+    await supabase
+      .from('players')
+      .update({ tiles: tilesToJson([]) })
+      .eq('id', playerId);
+  }, [playerId]);
+
   const playAgain = useCallback(async () => {
-    await startGame();
-  }, [startGame]);
+    await resetGame();
+  }, [resetGame]);
+
+  const leaveRoom = useCallback(async () => {
+    // Delete player from room
+    await supabase
+      .from('players')
+      .delete()
+      .eq('id', playerId);
+
+    // Check if room is empty and delete if so
+    const { data: remainingPlayers } = await supabase
+      .from('players')
+      .select('id')
+      .eq('room_id', roomId);
+
+    if (!remainingPlayers || remainingPlayers.length === 0) {
+      await supabase
+        .from('rooms')
+        .delete()
+        .eq('id', roomId);
+    }
+  }, [playerId, roomId]);
 
   const completedTileIndices = new Set<number>();
   completedLines.forEach(line => {
@@ -189,11 +280,17 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
     players,
     myTiles,
     mode,
+    entryIndex,
     completedLines,
     completedTileIndices,
     hasWon,
+    startEnteringNumbers,
+    enterNumber,
+    generateCard,
     startGame,
     markTile,
+    resetGame,
     playAgain,
+    leaveRoom,
   };
 };
