@@ -117,10 +117,10 @@ export const QuickChat = ({ roomId, playerName }: QuickChatProps) => {
 
   return (
     <>
-      {/* Toast notification for incoming messages */}
+      {/* Toast notification for incoming messages - appears above chat button */}
       {showToast && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-2 fade-in duration-300">
-          <div className="bg-card/95 backdrop-blur-sm border border-border rounded-xl px-4 py-3 shadow-lg">
+        <div className="fixed bottom-36 right-4 z-50 animate-in slide-in-from-bottom-2 fade-in duration-300">
+          <div className="bg-card/95 backdrop-blur-sm border border-border rounded-xl px-4 py-3 shadow-lg max-w-64">
             <p className="text-xs text-primary font-medium">{showToast.playerName}</p>
             <p className="text-sm text-foreground">{showToast.message}</p>
           </div>
