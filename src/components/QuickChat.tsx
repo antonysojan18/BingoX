@@ -138,7 +138,7 @@ export const QuickChat = ({ roomId, playerName }: QuickChatProps) => {
 
       {/* Chat panel */}
       {isOpen && (
-        <div className="fixed bottom-36 right-4 w-72 bg-card/95 backdrop-blur-sm border border-border rounded-xl shadow-xl z-30 overflow-hidden animate-in slide-in-from-bottom-2 fade-in duration-200">
+        <div className="fixed top-4 right-4 w-72 bg-card/95 backdrop-blur-sm border border-border rounded-xl shadow-xl z-30 overflow-hidden animate-in slide-in-from-top-2 fade-in duration-200">
           <div className="flex items-center justify-between p-3 border-b border-border">
             <h3 className="text-sm font-semibold text-foreground">Quick Chat</h3>
             <button
