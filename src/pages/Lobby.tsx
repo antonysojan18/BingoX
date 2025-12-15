@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useStrangerThingsMusic } from '@/hooks/useStrangerThingsMusic';
 import { useSound } from '@/hooks/useSound';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, Loader2 } from 'lucide-react';
 
 const generateRoomCode = () => {
   let code = '';
@@ -25,7 +25,7 @@ const Lobby = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
-  const { isPlaying, start, toggle, stop } = useStrangerThingsMusic();
+  const { isPlaying, isLoading, start, toggle, stop } = useStrangerThingsMusic();
   const { playRoomEnter } = useSound();
 
   // Auto-start music on first interaction if preference is enabled
@@ -194,12 +194,19 @@ const Lobby = () => {
       <div className="fixed top-4 right-4 flex items-center gap-2 z-50">
         <button
           onClick={toggle}
+          disabled={isLoading}
           className={`p-2.5 rounded-full glass-panel transition-all duration-300 hover:scale-105 ${
             isPlaying ? 'text-primary animate-pulse-glow' : 'text-foreground/60'
-          }`}
-          aria-label={isPlaying ? 'Mute music' : 'Play music'}
+          } ${isLoading ? 'opacity-50 cursor-wait' : ''}`}
+          aria-label={isLoading ? 'Loading music...' : isPlaying ? 'Mute music' : 'Play music'}
         >
-          {isPlaying ? <Volume2 size={20} /> : <VolumeX size={20} />}
+          {isLoading ? (
+            <Loader2 size={20} className="animate-spin" />
+          ) : isPlaying ? (
+            <Volume2 size={20} />
+          ) : (
+            <VolumeX size={20} />
+          )}
         </button>
         <ThemeToggle />
       </div>
