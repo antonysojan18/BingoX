@@ -1,152 +1,117 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
+const MUSIC_CACHE_KEY = 'bingox-stranger-things-music';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
 export const useStrangerThingsMusic = () => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const masterGainRef = useRef<GainNode | null>(null);
-  const oscillatorsRef = useRef<OscillatorNode[]>([]);
-  const intervalRef = useRef<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
 
-  const createOscillator = (
-    ctx: AudioContext,
-    type: OscillatorType,
-    frequency: number,
-    gain: number,
-    destination: AudioNode
-  ) => {
-    const osc = ctx.createOscillator();
-    const oscGain = ctx.createGain();
-    
-    osc.type = type;
-    osc.frequency.value = frequency;
-    oscGain.gain.value = gain;
-    
-    osc.connect(oscGain);
-    oscGain.connect(destination);
-    osc.start();
-    
-    return { osc, oscGain };
-  };
-
-  const start = useCallback(() => {
-    if (audioContextRef.current) return;
-
-    const ctx = new AudioContext();
-    audioContextRef.current = ctx;
-
-    // Master gain
-    const masterGain = ctx.createGain();
-    masterGain.gain.value = 0;
-    masterGainRef.current = masterGain;
-
-    // Low-pass filter for warmth
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 800;
-    filter.Q.value = 1;
-    filter.connect(masterGain);
-    masterGain.connect(ctx.destination);
-
-    // Deep bass drone (A1 - 55Hz)
-    const bass = createOscillator(ctx, 'sawtooth', 55, 0.08, filter);
-    oscillatorsRef.current.push(bass.osc);
-
-    // Sub bass
-    const subBass = createOscillator(ctx, 'sine', 27.5, 0.06, filter);
-    oscillatorsRef.current.push(subBass.osc);
-
-    // Pad oscillators (detuned for analog warmth)
-    const pad1 = createOscillator(ctx, 'triangle', 110, 0.03, filter);
-    const pad2 = createOscillator(ctx, 'triangle', 110.5, 0.03, filter);
-    oscillatorsRef.current.push(pad1.osc, pad2.osc);
-
-    // Arpeggio notes: A minor scale (A2, C3, E3, A3)
-    const arpeggioNotes = [110, 130.81, 164.81, 220];
-    let noteIndex = 0;
-
-    // Arpeggio oscillator
-    const arpOsc = ctx.createOscillator();
-    const arpGain = ctx.createGain();
-    arpOsc.type = 'square';
-    arpOsc.frequency.value = arpeggioNotes[0];
-    arpGain.gain.value = 0.04;
-    
-    // Add slight detune for analog feel
-    arpOsc.detune.value = -5;
-    
-    arpOsc.connect(arpGain);
-    arpGain.connect(filter);
-    arpOsc.start();
-    oscillatorsRef.current.push(arpOsc);
-
-    // Arpeggio pattern - 8th notes at ~100 BPM
-    const tempoMs = 300; // 300ms per note
-    intervalRef.current = window.setInterval(() => {
-      noteIndex = (noteIndex + 1) % arpeggioNotes.length;
-      arpOsc.frequency.setTargetAtTime(
-        arpeggioNotes[noteIndex],
-        ctx.currentTime,
-        0.01
-      );
-      
-      // Pulsing effect on arp
-      arpGain.gain.setTargetAtTime(0.05, ctx.currentTime, 0.01);
-      arpGain.gain.setTargetAtTime(0.02, ctx.currentTime + 0.1, 0.1);
-    }, tempoMs);
-
-    // LFO for bass modulation
-    const lfo = ctx.createOscillator();
-    const lfoGain = ctx.createGain();
-    lfo.type = 'sine';
-    lfo.frequency.value = 0.2; // Very slow modulation
-    lfoGain.gain.value = 5;
-    lfo.connect(lfoGain);
-    lfoGain.connect(bass.osc.frequency);
-    lfo.start();
-    oscillatorsRef.current.push(lfo);
-
-    // Fade in
-    masterGain.gain.setTargetAtTime(0.18, ctx.currentTime, 0.5);
-    
-    setIsPlaying(true);
-  }, []);
-
-  const stop = useCallback(() => {
-    if (!audioContextRef.current) return;
-
-    // Fade out
-    if (masterGainRef.current) {
-      masterGainRef.current.gain.setTargetAtTime(
-        0,
-        audioContextRef.current.currentTime,
-        0.3
-      );
+  const fetchMusic = useCallback(async (): Promise<string | null> => {
+    // Check cache first
+    const cached = localStorage.getItem(MUSIC_CACHE_KEY);
+    if (cached) {
+      console.log('Using cached music');
+      return cached;
     }
 
-    // Clean up after fade
-    setTimeout(() => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      
-      oscillatorsRef.current.forEach(osc => {
-        try {
-          osc.stop();
-        } catch (e) {
-          // Oscillator already stopped
+    setIsLoading(true);
+    try {
+      console.log('Generating Stranger Things-style music...');
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/elevenlabs-music`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            prompt: 'Dark synth wave music in the style of the Stranger Things TV show theme. Ethereal synth pads, pulsing bass, arpeggiator melody, 80s retro electronic sound, mysterious and atmospheric, cinematic ambient',
+            duration: 90,
+          }),
         }
-      });
-      oscillatorsRef.current = [];
+      );
 
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-        audioContextRef.current = null;
+      if (!response.ok) {
+        throw new Error(`Failed to generate music: ${response.status}`);
       }
 
-      masterGainRef.current = null;
+      const audioBlob = await response.blob();
+      const base64 = await blobToBase64(audioBlob);
+      
+      // Cache the music
+      localStorage.setItem(MUSIC_CACHE_KEY, base64);
+      console.log('Music generated and cached');
+      
+      return base64;
+    } catch (error) {
+      console.error('Error fetching music:', error);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const start = useCallback(async () => {
+    if (audioRef.current && !audioRef.current.paused) return;
+
+    // If we already have the audio loaded, just play it
+    if (audioRef.current && audioUrlRef.current) {
+      audioRef.current.play();
+      setIsPlaying(true);
+      return;
+    }
+
+    const musicUrl = await fetchMusic();
+    if (!musicUrl) {
+      console.error('Failed to get music');
+      return;
+    }
+
+    audioUrlRef.current = musicUrl;
+    const audio = new Audio(musicUrl);
+    audio.loop = true;
+    audio.volume = 0.3;
+    audioRef.current = audio;
+
+    audio.onended = () => {
+      // Loop will handle this, but just in case
       setIsPlaying(false);
-    }, 400);
+    };
+
+    audio.onerror = (e) => {
+      console.error('Audio playback error:', e);
+      setIsPlaying(false);
+    };
+
+    try {
+      await audio.play();
+      setIsPlaying(true);
+    } catch (error) {
+      console.error('Failed to play audio:', error);
+    }
+  }, [fetchMusic]);
+
+  const stop = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setIsPlaying(false);
   }, []);
 
   const toggle = useCallback(() => {
@@ -160,19 +125,12 @@ export const useStrangerThingsMusic = () => {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      oscillatorsRef.current.forEach(osc => {
-        try {
-          osc.stop();
-        } catch (e) {}
-      });
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
       }
     };
   }, []);
 
-  return { isPlaying, start, stop, toggle };
+  return { isPlaying, isLoading, start, stop, toggle };
 };
