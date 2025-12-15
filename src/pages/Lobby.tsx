@@ -5,10 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const generateRoomCode = () => {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
   for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+    code += Math.floor(Math.random() * 10).toString();
   }
   return code;
 };
@@ -95,7 +94,7 @@ const Lobby = () => {
       const { data: room, error: roomError } = await supabase
         .from('rooms')
         .select()
-        .eq('code', roomCode.toUpperCase().trim())
+        .eq('code', roomCode.trim())
         .eq('is_active', true)
         .single();
 
@@ -188,11 +187,13 @@ const Lobby = () => {
           </label>
           <input
             type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={roomCode}
-            onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+            onChange={(e) => setRoomCode(e.target.value.replace(/\D/g, ''))}
             placeholder="Enter 6-digit code"
             maxLength={6}
-            className="w-full px-4 py-3 rounded-xl bg-background/50 border border-border/50 text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all uppercase text-center tracking-widest text-lg font-mono"
+            className="w-full px-4 py-3 rounded-xl bg-background/50 border border-border/50 text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-center tracking-widest text-lg font-mono"
           />
         </div>
 
