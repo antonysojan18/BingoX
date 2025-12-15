@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useStrangerThingsMusic } from '@/hooks/useStrangerThingsMusic';
+import { Volume2, VolumeX } from 'lucide-react';
 
 const generateRoomCode = () => {
   let code = '';
@@ -19,6 +21,14 @@ const Lobby = () => {
   const [roomCode, setRoomCode] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
+  const { isPlaying, toggle, stop } = useStrangerThingsMusic();
+
+  // Stop music when leaving lobby
+  useEffect(() => {
+    return () => {
+      stop();
+    };
+  }, [stop]);
 
   const handleCreateRoom = async () => {
     if (!playerName.trim()) {
@@ -139,7 +149,18 @@ const Lobby = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8">
-      <ThemeToggle />
+      <div className="fixed top-4 right-4 flex items-center gap-2 z-50">
+        <button
+          onClick={toggle}
+          className={`p-2.5 rounded-full glass-panel transition-all duration-300 hover:scale-105 ${
+            isPlaying ? 'text-primary animate-pulse-glow' : 'text-foreground/60'
+          }`}
+          aria-label={isPlaying ? 'Mute music' : 'Play music'}
+        >
+          {isPlaying ? <Volume2 size={20} /> : <VolumeX size={20} />}
+        </button>
+        <ThemeToggle />
+      </div>
       
       <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-foreground mb-1 tracking-tight">
         Bingo<span className="text-primary">X</span>
