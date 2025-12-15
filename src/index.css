@@ -103,7 +103,9 @@
 
   body {
     @apply bg-background text-foreground font-outfit antialiased;
-    background: linear-gradient(135deg, hsl(var(--gradient-start)) 0%, hsl(var(--gradient-end)) 100%);
+    background: linear-gradient(135deg, hsl(var(--gradient-start)) 0%, hsl(var(--gradient-end)) 50%, hsl(var(--gradient-start)) 100%);
+    background-size: 400% 400%;
+    animation: gradient-flow 15s ease infinite;
     min-height: 100vh;
   }
 }
@@ -172,6 +174,18 @@
   .text-shadow-glow {
     text-shadow: 0 0 40px hsl(var(--tile-glow) / 0.8),
                  0 0 80px hsl(var(--tile-glow) / 0.4);
+  }
+}
+
+@keyframes gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
 
