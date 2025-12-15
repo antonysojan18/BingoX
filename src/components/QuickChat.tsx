@@ -130,7 +130,7 @@ export const QuickChat = ({ roomId, playerName }: QuickChatProps) => {
       {/* Chat button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-20 right-4 p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all z-30"
+        className="fixed bottom-20 right-4 p-3 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-all z-40"
         aria-label="Quick chat"
       >
         <MessageCircle size={24} />
