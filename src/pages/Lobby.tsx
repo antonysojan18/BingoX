@@ -15,6 +15,8 @@ const generateRoomCode = () => {
   return code;
 };
 
+const MUSIC_PREF_KEY = 'bingox-music-enabled';
+
 const Lobby = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -22,8 +24,38 @@ const Lobby = () => {
   const [roomCode, setRoomCode] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
-  const { isPlaying, toggle, stop } = useStrangerThingsMusic();
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const { isPlaying, start, toggle, stop } = useStrangerThingsMusic();
   const { playRoomEnter } = useSound();
+
+  // Auto-start music on first interaction if preference is enabled
+  useEffect(() => {
+    const musicEnabled = localStorage.getItem(MUSIC_PREF_KEY) !== 'false';
+    
+    if (!hasInteracted && musicEnabled) {
+      const handleFirstInteraction = () => {
+        setHasInteracted(true);
+        start();
+        document.removeEventListener('click', handleFirstInteraction);
+        document.removeEventListener('touchstart', handleFirstInteraction);
+      };
+
+      document.addEventListener('click', handleFirstInteraction);
+      document.addEventListener('touchstart', handleFirstInteraction);
+
+      return () => {
+        document.removeEventListener('click', handleFirstInteraction);
+        document.removeEventListener('touchstart', handleFirstInteraction);
+      };
+    }
+  }, [hasInteracted, start]);
+
+  // Save music preference when toggling
+  useEffect(() => {
+    if (hasInteracted) {
+      localStorage.setItem(MUSIC_PREF_KEY, isPlaying ? 'true' : 'false');
+    }
+  }, [isPlaying, hasInteracted]);
 
   // Stop music when leaving lobby
   useEffect(() => {
