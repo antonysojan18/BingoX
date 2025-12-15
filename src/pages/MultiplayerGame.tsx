@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { BingoBoard } from '@/components/BingoBoard';
 import { WinOverlay } from '@/components/WinOverlay';
+import { LoseOverlay } from '@/components/LoseOverlay';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { PlayerDashboard } from '@/components/PlayerDashboard';
 import { QuickChat } from '@/components/QuickChat';
@@ -23,6 +24,8 @@ const MultiplayerGame = () => {
     completedLines,
     completedTileIndices,
     hasWon,
+    hasLost,
+    winnerName,
     startEnteringNumbers,
     enterNumber,
     generateCard,
@@ -33,6 +36,7 @@ const MultiplayerGame = () => {
 
   const { playPop } = useSound();
   const [showWin, setShowWin] = useState(false);
+  const [showLose, setShowLose] = useState(false);
 
   useEffect(() => {
     if (!roomId || !playerId) {
@@ -45,6 +49,12 @@ const MultiplayerGame = () => {
       setShowWin(true);
     }
   }, [hasWon, showWin]);
+
+  useEffect(() => {
+    if (hasLost && !showLose) {
+      setShowLose(true);
+    }
+  }, [hasLost, showLose]);
 
   const handleTileClick = async (index: number) => {
     if (mode === 'entering') {
@@ -62,6 +72,11 @@ const MultiplayerGame = () => {
 
   const handleCloseWin = async () => {
     setShowWin(false);
+    await playAgain();
+  };
+
+  const handleCloseLose = async () => {
+    setShowLose(false);
     await playAgain();
   };
 
@@ -155,6 +170,15 @@ const MultiplayerGame = () => {
 
       {/* Win Overlay with Play Again and Back to Home */}
       {showWin && <WinOverlay onClose={handleCloseWin} onBackToHome={handleBackToHome} />}
+
+      {/* Lose Overlay */}
+      {showLose && (
+        <LoseOverlay 
+          winnerName={winnerName} 
+          onPlayAgain={handleCloseLose} 
+          onBackToHome={handleBackToHome} 
+        />
+      )}
 
       {/* Footer */}
       <footer className="mt-auto pt-8 pb-4 text-center">

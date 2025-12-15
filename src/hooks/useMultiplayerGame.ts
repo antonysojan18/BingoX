@@ -63,6 +63,8 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
   const [myTiles, setMyTiles] = useState<TileState[]>([]);
   const [completedLines, setCompletedLines] = useState<number[][]>([]);
   const [hasWon, setHasWon] = useState(false);
+  const [hasLost, setHasLost] = useState(false);
+  const [winnerName, setWinnerName] = useState<string>('');
   const [mode, setMode] = useState<'idle' | 'entering' | 'playing'>('idle');
   const [entryIndex, setEntryIndex] = useState(1);
   const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -178,12 +180,19 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
       )
       .subscribe();
 
-    // Broadcast channel for real-time number marking
+    // Broadcast channel for real-time number marking and game events
     const broadcastChannel = supabase
       .channel(`room-broadcast-${roomId}`)
       .on('broadcast', { event: 'number_marked' }, (payload) => {
         const { markedNumber, fromPlayerId } = payload.payload as { markedNumber: number; fromPlayerId: string };
         markNumberOnMyBoard(markedNumber, fromPlayerId);
+      })
+      .on('broadcast', { event: 'game_won' }, (payload) => {
+        const { winnerId, winnerPlayerName } = payload.payload as { winnerId: string; winnerPlayerName: string };
+        if (winnerId !== playerId) {
+          setHasLost(true);
+          setWinnerName(winnerPlayerName);
+        }
       })
       .subscribe();
 
@@ -295,6 +304,15 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
       if (me) {
         updates.wins = (me.wins || 0) + 1;
       }
+      
+      // Broadcast game won to all players
+      if (broadcastChannelRef.current) {
+        broadcastChannelRef.current.send({
+          type: 'broadcast',
+          event: 'game_won',
+          payload: { winnerId: playerId, winnerPlayerName: me?.name || 'Someone' },
+        });
+      }
     }
 
     await supabase
@@ -311,6 +329,8 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
     setEntryIndex(1);
     setCompletedLines([]);
     setHasWon(false);
+    setHasLost(false);
+    setWinnerName('');
 
     await supabase
       .from('players')
@@ -356,6 +376,8 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
     completedLines,
     completedTileIndices,
     hasWon,
+    hasLost,
+    winnerName,
     startEnteringNumbers,
     enterNumber,
     generateCard,
