@@ -4,6 +4,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useStrangerThingsMusic } from '@/hooks/useStrangerThingsMusic';
+import { useSound } from '@/hooks/useSound';
 import { Volume2, VolumeX } from 'lucide-react';
 
 const generateRoomCode = () => {
@@ -22,6 +23,7 @@ const Lobby = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const { isPlaying, toggle, stop } = useStrangerThingsMusic();
+  const { playRoomEnter } = useSound();
 
   // Stop music when leaving lobby
   useEffect(() => {
@@ -62,6 +64,10 @@ const Lobby = () => {
 
       if (playerError) throw playerError;
 
+      // Stop music and play room enter sound
+      stop();
+      playRoomEnter();
+      
       // Navigate to game
       navigate(`/game/${room.id}`, { 
         state: { playerId: player.id, playerName: playerName.trim(), roomCode: code } 
@@ -127,6 +133,10 @@ const Lobby = () => {
 
       if (playerError) throw playerError;
 
+      // Stop music and play room enter sound
+      stop();
+      playRoomEnter();
+      
       // Navigate to game
       navigate(`/game/${room.id}`, { 
         state: { playerId: player.id, playerName: playerName.trim(), roomCode: room.code } 

@@ -98,5 +98,59 @@ export const useSound = () => {
     }, 600);
   }, [getContext]);
 
-  return { playPop, playWin };
+  const playRoomEnter = useCallback(() => {
+    const ctx = getContext();
+    if (!ctx) return;
+
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+
+    // Swoosh/whoosh effect with rising tone
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    oscillator.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    // Rising frequency sweep
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(200, ctx.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.15);
+    oscillator.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.25);
+
+    // Low-pass filter for smoothness
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1000, ctx.currentTime);
+
+    // Volume envelope
+    gainNode.gain.setValueAtTime(0, ctx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.05);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+
+    oscillator.start(ctx.currentTime);
+    oscillator.stop(ctx.currentTime + 0.3);
+
+    // Add a subtle "confirmation" chime
+    setTimeout(() => {
+      const chime = ctx.createOscillator();
+      const chimeGain = ctx.createGain();
+      
+      chime.connect(chimeGain);
+      chimeGain.connect(ctx.destination);
+      
+      chime.type = 'sine';
+      chime.frequency.setValueAtTime(880, ctx.currentTime); // A5
+      
+      chimeGain.gain.setValueAtTime(0.1, ctx.currentTime);
+      chimeGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+      
+      chime.start(ctx.currentTime);
+      chime.stop(ctx.currentTime + 0.2);
+    }, 150);
+  }, [getContext]);
+
+  return { playPop, playWin, playRoomEnter };
 };
