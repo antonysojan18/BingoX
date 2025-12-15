@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { TileState } from './useBingoGame';
 import { Json } from '@/integrations/supabase/types';
@@ -65,6 +65,59 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
   const [hasWon, setHasWon] = useState(false);
   const [mode, setMode] = useState<'idle' | 'entering' | 'playing'>('idle');
   const [entryIndex, setEntryIndex] = useState(1);
+  const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  const checkCompletedLines = useCallback((tiles: TileState[]): number[][] => {
+    return WINNING_LINES.filter(line => 
+      line.every(index => tiles[index]?.marked)
+    );
+  }, []);
+
+  // Mark a number on my board (used when receiving broadcast)
+  const markNumberOnMyBoard = useCallback((markedNumber: number, fromPlayerId: string) => {
+    if (fromPlayerId === playerId) return; // Don't process our own broadcasts
+    
+    setMyTiles(currentTiles => {
+      if (currentTiles.length === 0) return currentTiles;
+      
+      const tileIndex = currentTiles.findIndex(t => t.value === markedNumber);
+      if (tileIndex === -1 || currentTiles[tileIndex]?.marked) return currentTiles;
+      
+      const newTiles = [...currentTiles];
+      newTiles[tileIndex] = { ...newTiles[tileIndex], marked: true };
+      
+      const lines = checkCompletedLines(newTiles);
+      const won = lines.length >= 5;
+      
+      setCompletedLines(lines);
+      setHasWon(won);
+      
+      // Update in database
+      const updates: { tiles: Json; wins?: number } = { tiles: tilesToJson(newTiles) };
+      if (won) {
+        supabase
+          .from('players')
+          .select('wins')
+          .eq('id', playerId)
+          .single()
+          .then(({ data }) => {
+            if (data) {
+              supabase
+                .from('players')
+                .update({ tiles: tilesToJson(newTiles), wins: (data.wins || 0) + 1 })
+                .eq('id', playerId);
+            }
+          });
+      } else {
+        supabase
+          .from('players')
+          .update(updates)
+          .eq('id', playerId);
+      }
+      
+      return newTiles;
+    });
+  }, [playerId, checkCompletedLines]);
 
   // Fetch players
   const fetchPlayers = useCallback(async () => {
@@ -102,14 +155,15 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
       setCompletedLines(lines);
       setHasWon(lines.length >= 5);
     }
-  }, [roomId, playerId]);
+  }, [roomId, playerId, checkCompletedLines]);
 
   // Subscribe to realtime updates
   useEffect(() => {
     fetchPlayers();
 
-    const channel = supabase
-      .channel(`room-${roomId}`)
+    // Channel for player database changes
+    const dbChannel = supabase
+      .channel(`room-db-${roomId}`)
       .on(
         'postgres_changes',
         {
@@ -124,16 +178,22 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [roomId, fetchPlayers]);
+    // Broadcast channel for real-time number marking
+    const broadcastChannel = supabase
+      .channel(`room-broadcast-${roomId}`)
+      .on('broadcast', { event: 'number_marked' }, (payload) => {
+        const { markedNumber, fromPlayerId } = payload.payload as { markedNumber: number; fromPlayerId: string };
+        markNumberOnMyBoard(markedNumber, fromPlayerId);
+      })
+      .subscribe();
 
-  const checkCompletedLines = (tiles: TileState[]): number[][] => {
-    return WINNING_LINES.filter(line => 
-      line.every(index => tiles[index]?.marked)
-    );
-  };
+    broadcastChannelRef.current = broadcastChannel;
+
+    return () => {
+      supabase.removeChannel(dbChannel);
+      supabase.removeChannel(broadcastChannel);
+    };
+  }, [roomId, fetchPlayers, markNumberOnMyBoard]);
 
   const initializeEmptyTiles = (): TileState[] => {
     return Array(25).fill(null).map(() => ({
@@ -205,6 +265,9 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
     if (myTiles[tileIndex]?.marked) return false;
     if (hasWon) return false;
 
+    const markedNumber = myTiles[tileIndex]?.value;
+    if (markedNumber === null || markedNumber === undefined) return false;
+
     const newTiles = [...myTiles];
     newTiles[tileIndex] = { ...newTiles[tileIndex], marked: true };
     
@@ -214,6 +277,15 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
     setMyTiles(newTiles);
     setCompletedLines(lines);
     setHasWon(won);
+
+    // Broadcast the marked number to all players in the room
+    if (broadcastChannelRef.current) {
+      broadcastChannelRef.current.send({
+        type: 'broadcast',
+        event: 'number_marked',
+        payload: { markedNumber, fromPlayerId: playerId },
+      });
+    }
 
     // Update in database
     const updates: { tiles: Json; wins?: number } = { tiles: tilesToJson(newTiles) };
@@ -231,7 +303,7 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
       .eq('id', playerId);
 
     return true;
-  }, [mode, myTiles, hasWon, playerId, players]);
+  }, [mode, myTiles, hasWon, playerId, players, checkCompletedLines]);
 
   const resetGame = useCallback(async () => {
     setMyTiles([]);
