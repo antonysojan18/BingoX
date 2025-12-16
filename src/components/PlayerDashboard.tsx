@@ -28,7 +28,7 @@ export const PlayerDashboard = ({ players, currentPlayerId, roomCode }: PlayerDa
             <div 
               key={player.id}
               className={`flex items-center justify-between gap-2 text-sm ${
-                player.id === currentPlayerId ? 'text-primary font-medium' : 'text-foreground/80'
+                player.id === currentPlayerId ? 'text-foreground font-medium' : 'text-foreground'
               }`}
             >
               <span className="truncate max-w-[80px] sm:max-w-[100px]">
