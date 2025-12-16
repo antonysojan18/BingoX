@@ -77,7 +77,7 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
   }, []);
 
   // Mark a number on my board (used when receiving broadcast)
-  const markNumberOnMyBoard = useCallback((markedNumber: number, fromPlayerId: string) => {
+  const markNumberOnMyBoard = useCallback(async (markedNumber: number, fromPlayerId: string) => {
     if (fromPlayerId === playerId) return; // Don't process our own broadcasts
     
     setMyTiles(currentTiles => {
@@ -95,28 +95,28 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
       setCompletedLines(lines);
       setHasWon(won);
       
-      // Update in database
-      const updates: { tiles: Json; wins?: number } = { tiles: tilesToJson(newTiles) };
-      if (won) {
-        supabase
-          .from('players')
-          .select('wins')
-          .eq('id', playerId)
-          .single()
-          .then(({ data }) => {
-            if (data) {
-              supabase
-                .from('players')
-                .update({ tiles: tilesToJson(newTiles), wins: (data.wins || 0) + 1 })
-                .eq('id', playerId);
-            }
-          });
-      } else {
-        supabase
-          .from('players')
-          .update(updates)
-          .eq('id', playerId);
-      }
+      // Update in database immediately (fire and forget but ensure it happens)
+      (async () => {
+        const updates: { tiles: Json; wins?: number } = { tiles: tilesToJson(newTiles) };
+        if (won) {
+          const { data } = await supabase
+            .from('players')
+            .select('wins')
+            .eq('id', playerId)
+            .single();
+          if (data) {
+            await supabase
+              .from('players')
+              .update({ tiles: tilesToJson(newTiles), wins: (data.wins || 0) + 1 })
+              .eq('id', playerId);
+          }
+        } else {
+          await supabase
+            .from('players')
+            .update(updates)
+            .eq('id', playerId);
+        }
+      })();
       
       return newTiles;
     });
