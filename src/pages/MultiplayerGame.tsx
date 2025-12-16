@@ -26,6 +26,8 @@ const MultiplayerGame = () => {
     hasWon,
     hasLost,
     winnerName,
+    isMyTurn,
+    currentTurnPlayerId,
     startEnteringNumbers,
     enterNumber,
     generateCard,
@@ -158,10 +160,19 @@ const MultiplayerGame = () => {
         )}
       </div>
 
-      {/* Completed Lines Counter */}
+      {/* Completed Lines Counter & Turn Indicator */}
       {mode === 'playing' && (
-        <div className="mt-4 text-foreground/80 text-sm sm:text-base font-medium">
-          Lines completed: <span className="text-primary">{completedLines.length}</span> / 5
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <div className="text-foreground/80 text-sm sm:text-base font-medium">
+            Lines completed: <span className="text-primary">{completedLines.length}</span> / 5
+          </div>
+          <div className={`text-sm sm:text-base font-semibold px-3 py-1 rounded-full ${
+            isMyTurn 
+              ? 'bg-primary/20 text-primary' 
+              : 'bg-muted text-muted-foreground'
+          }`}>
+            {isMyTurn ? "Your Turn!" : `Waiting for ${players.find(p => p.id === currentTurnPlayerId)?.name || 'opponent'}...`}
+          </div>
         </div>
       )}
 
