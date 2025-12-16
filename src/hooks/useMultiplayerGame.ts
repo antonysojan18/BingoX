@@ -67,6 +67,7 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
   const [winnerName, setWinnerName] = useState<string>('');
   const [mode, setMode] = useState<'idle' | 'entering' | 'playing'>('idle');
   const [entryIndex, setEntryIndex] = useState(1);
+  const [currentTurnPlayerId, setCurrentTurnPlayerId] = useState<string | null>(null);
   const broadcastChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const checkCompletedLines = useCallback((tiles: TileState[]): number[][] => {
@@ -184,8 +185,9 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
     const broadcastChannel = supabase
       .channel(`room-broadcast-${roomId}`)
       .on('broadcast', { event: 'number_marked' }, (payload) => {
-        const { markedNumber, fromPlayerId } = payload.payload as { markedNumber: number; fromPlayerId: string };
+        const { markedNumber, fromPlayerId, nextTurnPlayerId } = payload.payload as { markedNumber: number; fromPlayerId: string; nextTurnPlayerId: string };
         markNumberOnMyBoard(markedNumber, fromPlayerId);
+        setCurrentTurnPlayerId(nextTurnPlayerId);
       })
       .on('broadcast', { event: 'game_won' }, (payload) => {
         const { winnerId, winnerPlayerName } = payload.payload as { winnerId: string; winnerPlayerName: string };
@@ -193,6 +195,10 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
           setHasLost(true);
           setWinnerName(winnerPlayerName);
         }
+      })
+      .on('broadcast', { event: 'turn_initialized' }, (payload) => {
+        const { firstPlayerId } = payload.payload as { firstPlayerId: string };
+        setCurrentTurnPlayerId(firstPlayerId);
       })
       .subscribe();
 
@@ -259,11 +265,27 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
     setCompletedLines([]);
     setHasWon(false);
 
+    // Initialize turn - first player in the room gets the first turn
+    if (players.length > 0) {
+      const sortedPlayers = [...players].sort((a, b) => a.id.localeCompare(b.id));
+      const firstPlayerId = sortedPlayers[0].id;
+      setCurrentTurnPlayerId(firstPlayerId);
+      
+      // Broadcast turn initialization to all players
+      if (broadcastChannelRef.current) {
+        broadcastChannelRef.current.send({
+          type: 'broadcast',
+          event: 'turn_initialized',
+          payload: { firstPlayerId },
+        });
+      }
+    }
+
     await supabase
       .from('players')
       .update({ tiles: tilesToJson(newTiles) })
       .eq('id', playerId);
-  }, [playerId]);
+  }, [playerId, players]);
 
   const startGame = useCallback(async () => {
     await generateCard();
@@ -273,6 +295,7 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
     if (mode !== 'playing') return false;
     if (myTiles[tileIndex]?.marked) return false;
     if (hasWon) return false;
+    if (currentTurnPlayerId !== playerId) return false; // Not my turn
 
     const markedNumber = myTiles[tileIndex]?.value;
     if (markedNumber === null || markedNumber === undefined) return false;
@@ -287,12 +310,17 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
     setCompletedLines(lines);
     setHasWon(won);
 
-    // Broadcast the marked number to all players in the room
+    // Determine next turn player
+    const otherPlayers = players.filter(p => p.id !== playerId);
+    const nextPlayerId = otherPlayers.length > 0 ? otherPlayers[0].id : playerId;
+    setCurrentTurnPlayerId(nextPlayerId);
+
+    // Broadcast the marked number and turn change to all players in the room
     if (broadcastChannelRef.current) {
       broadcastChannelRef.current.send({
         type: 'broadcast',
         event: 'number_marked',
-        payload: { markedNumber, fromPlayerId: playerId },
+        payload: { markedNumber, fromPlayerId: playerId, nextTurnPlayerId: nextPlayerId },
       });
     }
 
@@ -321,7 +349,7 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
       .eq('id', playerId);
 
     return true;
-  }, [mode, myTiles, hasWon, playerId, players, checkCompletedLines]);
+  }, [mode, myTiles, hasWon, playerId, players, checkCompletedLines, currentTurnPlayerId]);
 
   const resetGame = useCallback(async () => {
     setMyTiles([]);
@@ -331,6 +359,7 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
     setHasWon(false);
     setHasLost(false);
     setWinnerName('');
+    setCurrentTurnPlayerId(null);
 
     await supabase
       .from('players')
@@ -368,6 +397,8 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
     line.forEach(index => completedTileIndices.add(index));
   });
 
+  const isMyTurn = currentTurnPlayerId === playerId;
+
   return {
     players,
     myTiles,
@@ -378,6 +409,8 @@ export const useMultiplayerGame = (roomId: string, playerId: string) => {
     hasWon,
     hasLost,
     winnerName,
+    isMyTurn,
+    currentTurnPlayerId,
     startEnteringNumbers,
     enterNumber,
     generateCard,
